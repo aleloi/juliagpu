@@ -39,4 +39,25 @@ extern "C" {
             [(CAMetalLayer*)layer release];
         }
     }
+    
+    // Updates the Metal layer size to match the window
+    void UpdateMetalLayerSize(void* layer, GLFWwindow* window) {
+        if (!layer || !window) {
+            return;
+        }
+        
+        @autoreleasepool {
+            CAMetalLayer* metalLayer = (CAMetalLayer*)layer;
+            NSWindow* nsWindow = glfwGetCocoaWindow(window);
+            if (!nsWindow) {
+                return;
+            }
+            
+            NSView* view = [nsWindow contentView];
+            
+            // Update layer bounds to match view
+            metalLayer.frame = view.bounds;
+            metalLayer.contentsScale = [nsWindow backingScaleFactor];
+        }
+    }
 } 
