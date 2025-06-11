@@ -1,0 +1,1 @@
+`nix develop` then `just build` makes the html presentation. Or install marp yourself, check the justfile, and build it.

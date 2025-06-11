@@ -1,0 +1,5 @@
+build:
+    marp marp.md --html --allow-local-files
+
+watch:
+    marp marp.md --html --allow-local-files --watch

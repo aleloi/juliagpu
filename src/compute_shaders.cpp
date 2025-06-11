@@ -158,7 +158,7 @@ const char* coloringComputeShaderCode = R"(
           // Orange to Yellow transition
           let s = (t - 0.42) / (0.6425 - 0.42);
           r = 255u;
-          g = u32(165.0 + (255.0 - 165.0) * s);
+          g = u32(165.0 * (1.0 - s));
           b = 0u;
         } else {
           // Yellow to White transition
