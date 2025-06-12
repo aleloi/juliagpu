@@ -210,7 +210,7 @@ Two implementations
 
 ---
 
-![bg fit ](vulcan4.png)
+![bg fit](vulcan4.png)
 
 ---
 
@@ -235,15 +235,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 }
 ```
 
+# Cross-platform graphics
+- for most purposes, just use js/wasm in the browser
+- is cross-platform really important?
+- OpenGL still runs everywhere
 ---
 
 <!---
 Not a slide, remove (and fix this)!
 -->
 
-# TODO coding
-- build system that I'm not THAT ashamed of
-- gh repo
+# Coding TODOs
+- workingbuild instructions?
 - BENCHMARK and graphs!
 
 ---

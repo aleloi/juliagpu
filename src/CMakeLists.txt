@@ -6,6 +6,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# WebGPU configuration - use precompiled Dawn binaries
+set(WEBGPU_BACKEND "DAWN" CACHE STRING "Backend to use")
+set(WEBGPU_BUILD_FROM_SOURCE OFF CACHE BOOL "Build WebGPU from source")
+
+# Add WebGPU distribution
+add_subdirectory(../webgpu webgpu)
+
 # Debug/Release configuration
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
@@ -21,14 +28,13 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         -Wdisabled-optimization
         -Wformat=2
         -Winit-self
-        -Wlogical-op
         -Wmissing-declarations
         -Wmissing-include-dirs
-        -Wnoexcept -Wold-style-cast
+        -Wold-style-cast
         -Woverloaded-virtual
         -Wredundant-decls
         -Wshadow -Wsign-conversion
-        -Wsign-promo -Wstrict-null-sentinel
+        -Wsign-promo
         -Wstrict-overflow=5
         -Wswitch-default -Wundef
         -Wno-unused-parameter
@@ -48,7 +54,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     
     message(STATUS "Debug build configuration enabled with enhanced debugging")
 else()
-    # Release optimizations
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
     message(STATUS "Release build configuration")
 endif()
@@ -57,14 +62,13 @@ if(UNIX)
     add_compile_definitions(ENABLE_STACK_TRACE=1)
 endif()
 
-find_package(Dawn REQUIRED)
 find_package(glfw3 REQUIRED)
 
 set(SOURCE_FILES 
     main.cc
-    input_handler.cpp
-    webgpu_setup.cpp
-    compute_shaders.cpp
+    input_handler.cc
+    webgpu_setup.cc
+    compute_shaders.cc
 )
 
 # Attempts to be cross-platform, but we can only build on macOS.
@@ -81,8 +85,8 @@ endif()
 
 add_executable(julia_fractal_webgpu ${SOURCE_FILES})
 
-# Link with dawn and GLFW
-target_link_libraries(julia_fractal_webgpu dawn::webgpu_dawn glfw ${PLATFORM_LIBS})
+# Link with webgpu target from WebGPU-distribution and GLFW
+target_link_libraries(julia_fractal_webgpu webgpu glfw ${PLATFORM_LIBS})
 
 # Debug prints
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
