@@ -11,9 +11,6 @@ static WebGPUContext* g_webgpu_context = nullptr;
 
 // Mouse state variables - now using fractal settings struct
 
-// Debug logging for mouse dragging
-static int dragDebugCounter = 0;
-
 // Old debug function - no longer used
 // void logMouseDragDebug(...) { ... }
 
@@ -226,14 +223,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
     if (g_settings.interaction.leftButtonHeld) {
         if (!g_settings.interaction.mouseDragging) {
-            // // Reset debug counter when we begin dragging
-            // dragDebugCounter = 0;
-            
-            // std::cout << "Starting drag at screen: (" << xpos << ", " << ypos << ")" << std::endl;
-            // std::cout << "Initial viewport: viewX=" << g_settings.viewport.viewX << ", viewY=" << g_settings.viewport.viewY << std::endl;
-            // std::cout << "Viewport dimensions: " << g_settings.viewport.viewWidth << "x" << g_settings.viewport.viewHeight << std::endl;
-            // std::cout << "Screen dimensions: logical=" << g_settings.viewport.logicalWidth << "x" << g_settings.viewport.logicalHeight << std::endl << std::endl;
-
             g_settings.interaction.mouseDragging = true;
         }
         
@@ -245,17 +234,6 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
         double fractalDx = (screenDx / g_settings.viewport.logicalWidth) * g_settings.viewport.viewWidth;
         double fractalDy = -(screenDy / g_settings.viewport.logicalHeight) * g_settings.viewport.viewHeight; // Note: negative because screen Y increases down, fractal Y increases up
         
-        // // Debug logging for the first 10 times
-        // if (dragDebugCounter < 10) {
-        //     std::cout << "=== DRAG DEBUG #" << (dragDebugCounter + 1) << " ===" << std::endl;
-        //     std::cout << "Screen offset: dx=" << screenDx << ", dy=" << screenDy << std::endl;
-        //     std::cout << "Fractal offset: dx=" << fractalDx << ", dy=" << fractalDy << std::endl;
-        //     std::cout << "Current screen pos: (" << xpos << ", " << ypos << ")" << std::endl;
-        //     std::cout << "Drag start screen: (" << g_settings.interaction.dragStartScreenX << ", " << g_settings.interaction.dragStartScreenY << ")" << std::endl;
-        //     std::cout << "=========================" << std::endl;
-        //     dragDebugCounter++;
-        // }
-
         // Apply total offset from drag start to initial viewport position
         g_settings.viewport.viewX = g_settings.interaction.dragStartViewX - fractalDx;
         g_settings.viewport.viewY = g_settings.interaction.dragStartViewY - fractalDy;
@@ -316,7 +294,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     g_settings.viewport.height = height;
     
     // Maintain aspect ratio for fractal viewport
-    double aspectRatio = (double)width / height;
+    double aspectRatio = static_cast<double>(width) / height;
     g_settings.viewport.viewHeight = g_settings.viewport.viewWidth / aspectRatio;
     
     // Reconfigure WebGPU surface

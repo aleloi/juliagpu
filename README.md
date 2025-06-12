@@ -1,10 +1,11 @@
 # Julia Fractal WebGPU Renderer
 
 
-Only builds on mac os currently. Requires CMake, a C++ compiler, GLFW3.
+Only runs on mac os. Requires CMake, a C++ compiler, GLFW3.
 ```bash
 git clone --recursive https://github.com/aleloi/juliagpu.git
 mkdir build && cd build && cmake ../src && cmake --build . && cd -
+./build/julia_fractal_webgpu
 ``` 
 
 

@@ -369,13 +369,13 @@ void initComputeShaders(const WebGPUContext& context) {
     
     // Create iteration buffer (stores normalized iteration counts as floats)
     wgpu::BufferDescriptor iterationBufferDesc{};
-    iterationBufferDesc.size = context.width * context.height * sizeof(float);
+    iterationBufferDesc.size = static_cast<uint64_t>(context.width) * static_cast<uint64_t>(context.height) * sizeof(float);
     iterationBufferDesc.usage = wgpu::BufferUsage::Storage;
     iterationBuffer = context.device.CreateBuffer(&iterationBufferDesc);
     
     // Create output buffer (stores final RGBA colors)
     wgpu::BufferDescriptor outputBufferDesc{};
-    outputBufferDesc.size = context.width * context.height * 4; // RGBA bytes
+    outputBufferDesc.size = static_cast<uint64_t>(context.width) * static_cast<uint64_t>(context.height) * 4; // RGBA bytes
     outputBufferDesc.usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc;
     outputBuffer = context.device.CreateBuffer(&outputBufferDesc);
     
@@ -485,8 +485,8 @@ void reinitComputeShaderResources(const WebGPUContext& context) {
     // Instead of immediate recreation, flag for deferred recreation to avoid race conditions
     std::cout << "Flagging compute resources for recreation: " << context.width << "x" << context.height << std::endl;
     needsResourceRecreation = true;
-    pendingWidth = context.width;
-    pendingHeight = context.height;
+    pendingWidth = static_cast<uint32_t>(context.width);
+    pendingHeight = static_cast<uint32_t>(context.height);
     g_context = context; // Update stored context
 }
 
@@ -496,8 +496,8 @@ static void doActualResourceRecreation() {
     std::cout << "Recreating for dimensions: " << pendingWidth << "x" << pendingHeight << std::endl;
     
     // Update context dimensions
-    g_context.width = pendingWidth;
-    g_context.height = pendingHeight;
+    g_context.width = static_cast<int>(pendingWidth);
+    g_context.height = static_cast<int>(pendingHeight);
     
     // === RECREATE SIZE-DEPENDENT BUFFERS ===
     std::cout << "Recreating iteration buffer..." << std::endl;
@@ -588,7 +588,7 @@ static void doActualResourceRecreation() {
 }
 
 void generateFractalData(const WebGPUContext& context, wgpu::CommandEncoder& encoder, 
-                        wgpu::Buffer& outputBuffer,
+                        wgpu::Buffer& outputBufferParam,
                         double viewX, double viewY, double viewWidth, double viewHeight) {
     if (!initialized) return;
     
@@ -663,18 +663,18 @@ void generateFractalData(const WebGPUContext& context, wgpu::CommandEncoder& enc
     computePass.SetBindGroup(0, iterationBindGroup);
     
     // Dispatch iteration compute shader
-    uint32_t workgroupsX = (context.width + 15) / 16;
-    uint32_t workgroupsY = (context.height + 15) / 16;
+    uint32_t workgroupsX = (static_cast<uint32_t>(context.width) + 15) / 16;
+    uint32_t workgroupsY = (static_cast<uint32_t>(context.height) + 15) / 16;
     
     // DEBUG: Log dispatch dimensions after resize
     static uint32_t lastLoggedWidth = 0;
     static uint32_t lastLoggedHeight = 0;
-    if (context.width != lastLoggedWidth || context.height != lastLoggedHeight) {
+    if (static_cast<uint32_t>(context.width) != lastLoggedWidth || static_cast<uint32_t>(context.height) != lastLoggedHeight) {
         std::cout << "DISPATCH DEBUG: context dimensions: " << context.width << "x" << context.height << std::endl;
         std::cout << "DISPATCH DEBUG: workgroups: " << workgroupsX << "x" << workgroupsY << std::endl;
         std::cout << "DISPATCH DEBUG: total threads: " << (workgroupsX * 16) << "x" << (workgroupsY * 16) << std::endl;
-        lastLoggedWidth = context.width;
-        lastLoggedHeight = context.height;
+        lastLoggedWidth = static_cast<uint32_t>(context.width);
+        lastLoggedHeight = static_cast<uint32_t>(context.height);
     }
     
     computePass.DispatchWorkgroups(workgroupsX, workgroupsY);
@@ -695,8 +695,8 @@ void generateFractalData(const WebGPUContext& context, wgpu::CommandEncoder& enc
     wgpu::TexelCopyBufferInfo texelCopyBufferInfo{};
     texelCopyBufferInfo.buffer = ::outputBuffer;
     texelCopyBufferInfo.layout.offset = 0;
-    texelCopyBufferInfo.layout.bytesPerRow = context.width * 4;
-    texelCopyBufferInfo.layout.rowsPerImage = context.height;
+    texelCopyBufferInfo.layout.bytesPerRow = static_cast<uint32_t>(context.width) * 4;
+    texelCopyBufferInfo.layout.rowsPerImage = static_cast<uint32_t>(context.height);
     
     wgpu::TexelCopyTextureInfo texelCopyTextureInfo{};
     texelCopyTextureInfo.texture = fractalTexture;
@@ -705,19 +705,19 @@ void generateFractalData(const WebGPUContext& context, wgpu::CommandEncoder& enc
     texelCopyTextureInfo.aspect = wgpu::TextureAspect::All;
     
     wgpu::Extent3D copySize{};
-    copySize.width = context.width;
-    copySize.height = context.height;
+    copySize.width = static_cast<uint32_t>(context.width);
+    copySize.height = static_cast<uint32_t>(context.height);
     copySize.depthOrArrayLayers = 1;
     
     // DEBUG: Log copy dimensions after resize
     static uint32_t lastCopyWidth = 0;
     static uint32_t lastCopyHeight = 0;
-    if (context.width != lastCopyWidth || context.height != lastCopyHeight) {
+    if (static_cast<uint32_t>(context.width) != lastCopyWidth || static_cast<uint32_t>(context.height) != lastCopyHeight) {
         std::cout << "COPY DEBUG: buffer-to-texture copy size: " << copySize.width << "x" << copySize.height << std::endl;
         std::cout << "COPY DEBUG: bytes per row: " << texelCopyBufferInfo.layout.bytesPerRow << std::endl;
         std::cout << "COPY DEBUG: rows per image: " << texelCopyBufferInfo.layout.rowsPerImage << std::endl;
-        lastCopyWidth = context.width;
-        lastCopyHeight = context.height;
+        lastCopyWidth = static_cast<uint32_t>(context.width);
+        lastCopyHeight = static_cast<uint32_t>(context.height);
     }
     
     encoder.CopyBufferToTexture(&texelCopyBufferInfo, &texelCopyTextureInfo, &copySize);
@@ -816,7 +816,7 @@ void debugDumpBufferToFile(const WebGPUContext& context, wgpu::Buffer& buffer,
         if (mappedData) {
             // Write data to file
             std::ofstream file(filename, std::ios::binary);
-            file.write(static_cast<const char*>(mappedData), stagingBufferDesc.size);
+            file.write(static_cast<const char*>(mappedData), static_cast<std::streamsize>(stagingBufferDesc.size));
             file.close();
             
             std::cout << "DEBUG: Buffer dumped successfully. Size: " << stagingBufferDesc.size << " bytes" << std::endl;
@@ -824,14 +824,14 @@ void debugDumpBufferToFile(const WebGPUContext& context, wgpu::Buffer& buffer,
             // Check first few pixels for debugging
             const uint32_t* pixels = static_cast<const uint32_t*>(mappedData);
             std::cout << "DEBUG: First 10 pixels (RGBA as uint32):" << std::endl;
-            for (int i = 0; i < std::min(10u, width * height); i++) {
+            for (uint32_t i = 0; i < std::min(10u, width * height); i++) {
                 uint32_t pixel = pixels[i];
                 uint8_t r = pixel & 0xFF;
                 uint8_t g = (pixel >> 8) & 0xFF;
                 uint8_t b = (pixel >> 16) & 0xFF;
                 uint8_t a = (pixel >> 24) & 0xFF;
-                std::cout << "  Pixel " << i << ": R=" << (int)r << " G=" << (int)g 
-                         << " B=" << (int)b << " A=" << (int)a << " (0x" << std::hex << pixel << std::dec << ")" << std::endl;
+                std::cout << "  Pixel " << i << ": R=" << static_cast<int>(r) << " G=" << static_cast<int>(g) 
+                         << " B=" << static_cast<int>(b) << " A=" << static_cast<int>(a) << " (0x" << std::hex << pixel << std::dec << ")" << std::endl;
             }
         }
         
@@ -891,7 +891,7 @@ void debugVerifyComputeShaderExecution(const WebGPUContext& context) {
     
     // Check if the color squares debug pattern is working
     // Create a staging buffer to read output buffer data  
-    uint32_t bufferSize = context.width * context.height * 4;
+    uint32_t bufferSize = static_cast<uint32_t>(context.width) * static_cast<uint32_t>(context.height) * 4;
     wgpu::BufferDescriptor stagingBufferDesc{};
     stagingBufferDesc.size = bufferSize;
     stagingBufferDesc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
@@ -949,10 +949,10 @@ void debugVerifyComputeShaderExecution(const WebGPUContext& context) {
                 uint8_t tr_b = (topRight >> 16) & 0xFF;
                 uint8_t tr_a = (topRight >> 24) & 0xFF;
                 
-                std::cout << "DEBUG: Top-left RGBA: " << (int)tl_r << "," << (int)tl_g 
-                         << "," << (int)tl_b << "," << (int)tl_a << std::endl;
-                std::cout << "DEBUG: Top-right RGBA: " << (int)tr_r << "," << (int)tr_g 
-                         << "," << (int)tr_b << "," << (int)tr_a << std::endl;
+                std::cout << "DEBUG: Top-left RGBA: " << static_cast<int>(tl_r) << "," << static_cast<int>(tl_g) 
+                         << "," << static_cast<int>(tl_b) << "," << static_cast<int>(tl_a) << std::endl;
+                std::cout << "DEBUG: Top-right RGBA: " << static_cast<int>(tr_r) << "," << static_cast<int>(tr_g) 
+                         << "," << static_cast<int>(tr_b) << "," << static_cast<int>(tr_a) << std::endl;
                 
                 if (tl_r == 255 && tl_g == 0 && tl_b == 0) {
                     std::cout << "DEBUG: ✓ Compute shader debug pattern working - red square detected!" << std::endl;
@@ -980,7 +980,7 @@ void debugSaveBufferAsPPM(const WebGPUContext& context, wgpu::Buffer& buffer,
     
     // Create staging buffer
     wgpu::BufferDescriptor stagingBufferDesc{};
-    stagingBufferDesc.size = width * height * 4;
+    stagingBufferDesc.size = static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * 4;
     stagingBufferDesc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
     wgpu::Buffer stagingBuffer = context.device.CreateBuffer(&stagingBufferDesc);
     
@@ -1021,7 +1021,7 @@ void debugSaveBufferAsPPM(const WebGPUContext& context, wgpu::Buffer& buffer,
                     uint8_t r = pixel & 0xFF;
                     uint8_t g = (pixel >> 8) & 0xFF; 
                     uint8_t b = (pixel >> 16) & 0xFF;
-                    file << (int)r << " " << (int)g << " " << (int)b << " ";
+                    file << static_cast<int>(r) << " " << static_cast<int>(g) << " " << static_cast<int>(b) << " ";
                 }
                 file << "\n";
             }
@@ -1071,8 +1071,8 @@ void validateComputeShaderSetup(const WebGPUContext& context) {
     if (isValid) {
         std::cout << "Compute shader setup validation passed" << std::endl;
         std::cout << "    - Framebuffer size: " << context.width << "x" << context.height << std::endl;
-        std::cout << "    - Iteration buffer size: " << (context.width * context.height * sizeof(float)) << " bytes" << std::endl;
-        std::cout << "    - Output buffer size: " << (context.width * context.height * 4) << " bytes" << std::endl;
+        std::cout << "    - Iteration buffer size: " << (static_cast<uint64_t>(context.width) * static_cast<uint64_t>(context.height) * sizeof(float)) << " bytes" << std::endl;
+        std::cout << "    - Output buffer size: " << (static_cast<uint64_t>(context.width) * static_cast<uint64_t>(context.height) * 4) << " bytes" << std::endl;
     } else {
         std::cerr << "CRITICAL: Compute shader setup validation FAILED!" << std::endl;
     }
